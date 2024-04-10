@@ -57,6 +57,8 @@ export class LoginFormComponent {
         },
         error: () => {
           this.errorMessage = 'Ошибка авторизации';
+          this.userName = null;
+          this.reloginTimerService.startCountdown(60);
           setTimeout(() => {
             this.errorMessage = '';
             this.changeDetector.detectChanges();
