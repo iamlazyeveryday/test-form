@@ -1,0 +1,36 @@
+<form [formGroup]="loginForm" (ngSubmit)="submitLogin()">
+  <h1>Вход или регистрация</h1>
+
+  <div class="form-control">
+    <label for="username">Логин</label>
+    <input
+      formControlName="username"
+      id="username"
+      autocomplete="username"
+      type="text"
+      placeholder="Введите имя пользователя"
+      autofocus
+    >
+  </div>
+
+  <button
+    type="submit"
+    [disabled]="!canResend || isLoading || !loginForm.valid"
+  >Отправить</button>
+
+  <ng-container *ngIf="isLoading">
+    <div>Загрузка...</div>
+  </ng-container>
+
+  <ng-container *ngIf="!isLoading">
+    <ng-container *ngIf="userName; else statusMessages">
+      <p>Добро пожаловать, {{ userName }}!</p>
+    </ng-container>
+  </ng-container>
+
+  <ng-template #statusMessages>
+    <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+    <p *ngIf="countdown">Подождите {{ countdown }} секунд перед повторной отправкой</p>
+  </ng-template>
+
+</form>
