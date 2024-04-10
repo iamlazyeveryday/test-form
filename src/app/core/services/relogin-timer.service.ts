@@ -5,7 +5,7 @@ import { BehaviorSubject, Observable, finalize, takeWhile, timer, tap } from 'rx
   providedIn: 'root'
 })
 export class ReloginTimerService {
-  private countdown$: BehaviorSubject<number> = new BehaviorSubject<number>(0);
+  public countdown$: BehaviorSubject<number> = new BehaviorSubject<number>(0);
   private canResendSubject = new BehaviorSubject<boolean>(true);
 
   get countdown(): Observable<number> {

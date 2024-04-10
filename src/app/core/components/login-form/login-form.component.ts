@@ -1,71 +1,75 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { ReloginTimerService } from '../../services/relogin-timer.service';
-import { Subject, Subscription, takeUntil } from 'rxjs';
+import { Observable, Subject, catchError, finalize, of, tap } from 'rxjs';
 
 @Component({
   selector: 'app-login-form',
   templateUrl: './login-form.component.html',
-  styleUrl: './login-form.component.scss'
+  styleUrl: './login-form.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LoginFormComponent implements OnInit, OnDestroy {
-  public loginForm = new FormGroup({
-    username: new FormControl('', [Validators.required]),
-  });
-  userName: string | null = null;
-  countdown: number | null = null;
-  canResend = true;
-  isLoading = false;
-  errorMessage: string = '';
-  private destroy$ = new Subject<void>();
+export class LoginFormComponent {
+  private readonly authService = inject(AuthService);
+  private readonly reloginTimerService = inject(ReloginTimerService);
+
+  public loginTitle = 'Вход или регистрация';
+  public usernameLabel = 'Логин';
+  public usernamePlaceholder = 'Введите имя пользователя';
+  public submitButtonLabel = 'Отправить';
+  public loadingMessage = 'Загрузка...';
+  public userName: string | null = null;
+  public canResend: boolean = true;
+  public isLoading: boolean = false;
+  public errorMessage: string = '';
 
   constructor(
-    private authService: AuthService,
-    private reloginTimerService: ReloginTimerService
+    private readonly changeDetector: ChangeDetectorRef,
   ) {}
 
-  ngOnInit(): void {
-    this.reloginTimerService.countdown.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(value => {
-      this.countdown = value;
-      this.canResend = value === 0;
-    });
+  get welcomeMessage(): string {
+    return `Добро пожаловать, ${this.userName}!`;
+  };
+  public getResendMessage(count: number): string {
+    return `Подождите ${count} секунд перед повторной отправкой`;
+  };
 
-    this.reloginTimerService.canResend.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(canSend => {
-      this.canResend = canSend;
-    });
-  }
+  public loginForm = new FormGroup({
+    username: new FormControl('', [Validators.required, Validators.minLength(3)]),
+  });
+
+  public countdown$: Observable<number> = this.reloginTimerService.countdown$.pipe(
+    tap(value => this.canResend = value === 0)
+  );
 
   submitLogin(): void {
-    if(this.loginForm.valid && this.canResend) {
-      this.isLoading = true;
-      const username = this.loginForm.value.username;
+    if(!this.loginForm.valid || !this.canResend) return;
 
-      this.authService.login<{ username: string }>(username!).subscribe({
+    this.isLoading = true;
+    const username = this.loginForm.value.username?.replace(/\s+/g, '');
+
+    this.authService.login<{ username: string }>(username!).pipe(
+      tap({
         next: (response) => {
-          this.isLoading = false;
           this.userName = response.username;
-          this.loginForm.reset();
+          this.changeDetector.detectChanges();
         },
-        error: (error) => {
-          console.log(error);
-          this.isLoading = false;
-          this.loginForm.reset();
+        error: () => {
           this.errorMessage = 'Ошибка авторизации';
-          setTimeout(() => this.errorMessage = '', 5000);
-          this.reloginTimerService.startCountdown(60);
+          setTimeout(() => {
+            this.errorMessage = '';
+            this.changeDetector.detectChanges();
+          }, 5000);
+          this.changeDetector.detectChanges();
         }
-      });
-    }
-
-  }
-
-  ngOnDestroy(): void {
-      this.destroy$.next();
-      this.destroy$.complete();
+      }),
+      finalize(() => {
+        this.isLoading = false;
+        this.loginForm.reset();
+        this.changeDetector.detectChanges();
+      }),
+      catchError(() => of())
+    ).subscribe();
   }
 }

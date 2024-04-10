@@ -1,14 +1,14 @@
 <form [formGroup]="loginForm" (ngSubmit)="submitLogin()">
-  <h1>Вход или регистрация</h1>
+  <h1>{{ loginTitle }}</h1>
 
   <div class="form-control">
-    <label for="username">Логин</label>
+    <label for="username">{{ usernameLabel }}</label>
     <input
       formControlName="username"
       id="username"
       autocomplete="username"
       type="text"
-      placeholder="Введите имя пользователя"
+      placeholder="{{ usernamePlaceholder }}"
       autofocus
     >
   </div>
@@ -16,21 +16,19 @@
   <button
     type="submit"
     [disabled]="!canResend || isLoading || !loginForm.valid"
-  >Отправить</button>
+  >{{ submitButtonLabel }}</button>
 
   <ng-container *ngIf="isLoading">
-    <div>Загрузка...</div>
+    <div>{{ loadingMessage }}</div>
   </ng-container>
 
-  <ng-container *ngIf="!isLoading">
-    <ng-container *ngIf="userName; else statusMessages">
-      <p>Добро пожаловать, {{ userName }}!</p>
-    </ng-container>
+  <ng-container *ngIf="userName; else statusMessages">
+    <p>{{ welcomeMessage }}</p>
   </ng-container>
 
   <ng-template #statusMessages>
     <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
-    <p *ngIf="countdown">Подождите {{ countdown }} секунд перед повторной отправкой</p>
+    <p *ngIf="countdown$ | async as countdown ">{{ getResendMessage(countdown) }}</p>
   </ng-template>
 
 </form>
