@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { ReloginTimerService } from '../../services/relogin-timer.service';
-import { Observable, Subject, catchError, finalize, of, tap } from 'rxjs';
+import { Observable, Subscription, catchError, finalize, of, tap } from 'rxjs';
+import { OnDestroy } from '@angular/core';
 
 @Component({
   selector: 'app-login-form',
@@ -10,7 +11,7 @@ import { Observable, Subject, catchError, finalize, of, tap } from 'rxjs';
   styleUrl: './login-form.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LoginFormComponent {
+export class LoginFormComponent implements OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly reloginTimerService = inject(ReloginTimerService);
 
@@ -43,20 +44,22 @@ export class LoginFormComponent {
     tap(value => this.canResend = value === 0)
   );
 
+  private loginSubscription?: Subscription;
+
   submitLogin(): void {
     if(!this.loginForm.valid || !this.canResend) return;
 
     this.isLoading = true;
     const username = this.loginForm.value.username?.replace(/\s+/g, '');
 
-    this.authService.login<{ username: string }>(username!).pipe(
+    this.loginSubscription = this.authService.login(username!).pipe(
       tap({
         next: (response) => {
           this.userName = response.username;
           this.changeDetector.detectChanges();
         },
-        error: () => {
-          this.errorMessage = 'Ошибка авторизации';
+        error: (errorMessage) => {
+          this.errorMessage = errorMessage;
           this.userName = null;
           this.reloginTimerService.startCountdown(60);
           setTimeout(() => {
@@ -73,5 +76,9 @@ export class LoginFormComponent {
       }),
       catchError(() => of())
     ).subscribe();
+  }
+
+  ngOnDestroy(): void {
+      this.loginSubscription?.unsubscribe();
   }
 }
