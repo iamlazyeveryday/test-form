@@ -16,7 +16,7 @@ export class AuthService {
     return this.http.post<AuthResponse>(url, { username }).pipe(
       catchError((error: HttpErrorResponse) => {
         const errorMessage = error.error?.message || 'Произошла ошибка авторизации';
-        return throwError(errorMessage);
+        return throwError(() => errorMessage);
       })
     )
   }
