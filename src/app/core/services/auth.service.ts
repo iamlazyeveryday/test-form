@@ -1,6 +1,8 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { catchError, Observable, throwError } from 'rxjs';
+import { environment } from '../../../environments/environment.development';
+import { AuthResponse } from '../interfaces/user-login.interface';
 
 
 @Injectable({
@@ -9,8 +11,13 @@ import { Observable } from 'rxjs';
 export class AuthService {
   private readonly http = inject(HttpClient);
 
-  login<T>(username: string): Observable<T> {
-    const url = '/login'
-    return this.http.post<T>(url, { username })
+  login(username: string): Observable<AuthResponse> {
+    const url = environment.url;
+    return this.http.post<AuthResponse>(url, { username }).pipe(
+      catchError((error: HttpErrorResponse) => {
+        const errorMessage = error.error?.message || 'Произошла ошибка авторизации';
+        return throwError(() => errorMessage);
+      })
+    )
   }
 }
