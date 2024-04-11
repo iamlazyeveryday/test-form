@@ -1,0 +1,32 @@
+<form [formGroup]="form" (ngSubmit)="submitLogin()">
+  <h1>{{ config.loginTitle }}</h1>
+
+  <div class="form-control">
+    <label for="username">{{ config.usernameLabel }}</label>
+    <input
+      formControlName="username"
+      autocomplete="username"
+      type="text"
+      [placeholder]="config.usernamePlaceholder"
+      autofocus
+    >
+  </div>
+
+  <button
+    type="submit"
+    [disabled]="!(canResend$ | async) || (isLoading$ | async) || !form.valid"
+  >{{ config.submitButtonLabel }}</button>
+
+  <ng-container *ngIf="(isLoading$ | async)">
+    <div>{{ config.loadingMessage }}</div>
+  </ng-container>
+
+  <ng-container *ngIf="userName; else statusMessages">
+    <p>{{ userName | welcomeMessage }}</p>
+  </ng-container>
+</form>
+
+<ng-template #statusMessages>
+  <div *ngIf="(errorMessage$ | async) as errorMessage" class="error">{{ errorMessage }}</div>
+  <p *ngIf="countdown$ | async as countdown ">{{ getResendMessage(countdown) }}</p>
+</ng-template>

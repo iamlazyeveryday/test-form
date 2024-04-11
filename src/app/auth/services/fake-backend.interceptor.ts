@@ -17,6 +17,7 @@ export class FakeBackendInterceptor implements HttpInterceptor {
             return of(new HttpResponse<AuthResponse>({
               status: 200,
               body: {
+                status: 'success',
                 token: 'fake-jwt-token',
                 username: user.username
               }
@@ -25,7 +26,10 @@ export class FakeBackendInterceptor implements HttpInterceptor {
             return throwError(() => new HttpErrorResponse({
               status: 401,
               statusText: 'Unauthorized',
-              error: { message: 'Некорректное имя пользователя' }
+              error: {
+                status: 'error',
+                message: 'Некорректное имя пользователя'
+              }
             }));
           }
         })

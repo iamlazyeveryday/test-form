@@ -1,8 +1,8 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { catchError, Observable, throwError } from 'rxjs';
-import { environment } from '../../../environments/environment.development';
 import { AuthResponse } from '../interfaces/user-login.interface';
+import { AUTH_API_URL } from '../../lib/api-url.token';
 
 
 @Injectable({
@@ -10,13 +10,12 @@ import { AuthResponse } from '../interfaces/user-login.interface';
 })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly authApiUrl = inject(AUTH_API_URL);
 
   login(username: string): Observable<AuthResponse> {
-    const url = environment.url;
-    return this.http.post<AuthResponse>(url, { username }).pipe(
+    return this.http.post<AuthResponse>(this.authApiUrl, { username }).pipe(
       catchError((error: HttpErrorResponse) => {
-        const errorMessage = error.error?.message || 'Произошла ошибка авторизации';
-        return throwError(() => errorMessage);
+        return throwError(() => (error.error?.message || 'Произошла ошибка авторизации'));
       })
     )
   }
